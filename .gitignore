@@ -2,7 +2,7 @@
 .vertx/
 
 ### Eclipse ###
-build/
+
 
 .metadata
 bin/
@@ -157,6 +157,7 @@ buildNumber.properties
 ### Gradle ###
 .gradle
 /buildTool/
+build/
 
 # Ignore Gradle GUI config
 gradle-app.setting
