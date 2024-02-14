@@ -2,6 +2,7 @@
 .vertx/
 
 ### Eclipse ###
+build/
 
 .metadata
 bin/
