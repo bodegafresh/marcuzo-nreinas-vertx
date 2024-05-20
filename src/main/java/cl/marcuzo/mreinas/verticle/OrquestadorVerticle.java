@@ -11,7 +11,7 @@ public class OrquestadorVerticle extends AbstractVerticle  {
     public void start(Future<Void> startFuture) {
         // Recibir N como parámetro de configuración
         int N = config().getInteger("N", 8); // Default a 8 si no se proporciona
-        System.out.println("start verticle trabajador");
+        System.out.println("start verticle trabajador cambio");
 
         // Aquí iría la lógica para desplegar los verticles trabajadores y manejar los resultados
         // Por ejemplo, desplegar un verticle para cada posible posición inicial de la primera reina
