@@ -1,4 +1,4 @@
-package cl.marcuzo.mreinas.verticle;
+package cl.marcuzo.nreinas.verticle;
 
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.DeploymentOptions;

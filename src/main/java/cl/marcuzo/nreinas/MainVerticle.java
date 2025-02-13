@@ -1,6 +1,6 @@
-package cl.marcuzo.mreinas;
+package cl.marcuzo.nreinas;
 
-import cl.marcuzo.mreinas.verticle.OrquestadorVerticle;
+import cl.marcuzo.nreinas.verticle.OrquestadorVerticle;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Promise;
