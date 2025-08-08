@@ -192,3 +192,4 @@ nbdist/
 .editorconfig
 .idea/
 data/
+app.log
