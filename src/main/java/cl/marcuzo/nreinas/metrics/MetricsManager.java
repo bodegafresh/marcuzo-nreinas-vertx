@@ -226,6 +226,46 @@ public class MetricsManager {
     }
 
     /**
+     * Registra métricas de rendimiento con dimensiones N y workers
+     */
+    public void recordPerformanceMetrics(int n, int workers, long executionTimeMs, int solutionsFound) {
+        // Registrar tiempo de ejecución con dimensiones
+        Timer.builder("nqueens_performance_duration_milliseconds")
+            .description("Tiempo de ejecución de N-Reinas por tamaño y workers")
+            .tag("n", String.valueOf(n))
+            .tag("workers", String.valueOf(workers))
+            .tag("complexity", ApplicationConfig.getComplexityLevel(n))
+            .tag("application", ApplicationConfig.METRICS_PREFIX)
+            .register(prometheusRegistry)
+            .record(executionTimeMs, java.util.concurrent.TimeUnit.MILLISECONDS);
+
+        // Registrar soluciones encontradas con dimensiones
+        Counter.builder("nqueens_performance_solutions_total")
+            .description("Total de soluciones encontradas por configuración")
+            .tag("n", String.valueOf(n))
+            .tag("workers", String.valueOf(workers))
+            .tag("complexity", ApplicationConfig.getComplexityLevel(n))
+            .tag("application", ApplicationConfig.METRICS_PREFIX)
+            .register(prometheusRegistry)
+            .increment(solutionsFound);
+
+        // Registrar eficiencia (soluciones por segundo)
+        if (executionTimeMs > 0) {
+            double solutionsPerSecond = (solutionsFound * 1000.0) / executionTimeMs;
+            
+            // Registrar la eficiencia como un counter con el valor
+            Counter.builder("nqueens_performance_efficiency_solutions_per_second_total")
+                .description("Total de eficiencia acumulada (soluciones por segundo)")
+                .tag("n", String.valueOf(n))
+                .tag("workers", String.valueOf(workers))
+                .tag("complexity", ApplicationConfig.getComplexityLevel(n))
+                .tag("application", ApplicationConfig.METRICS_PREFIX)
+                .register(prometheusRegistry)
+                .increment(solutionsPerSecond);
+        }
+    }
+
+    /**
      * Incrementa requests HTTP
      */
     public void incrementHttpRequests() {

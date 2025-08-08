@@ -180,6 +180,49 @@ public final class ApplicationConfig {
     }
 
     /**
+     * Evalúa la complejidad computacional del problema
+     *
+     * @param boardSize Tamaño del tablero
+     * @return Nivel de complejidad: "trivial", "normal", "complejo", "muy_complejo", "extremo"
+     */
+    public static String getComplexityLevel(int boardSize) {
+        if (boardSize <= 4) {
+            return "trivial";
+        } else if (boardSize <= 8) {
+            return "normal";
+        } else if (boardSize <= 12) {
+            return "complejo";
+        } else if (boardSize <= 16) {
+            return "muy_complejo";
+        } else {
+            return "extremo";
+        }
+    }
+
+    /**
+     * Obtiene tiempo estimado de ejecución en formato human-readable
+     *
+     * @param boardSize Tamaño del tablero
+     * @return Descripción del tiempo estimado
+     */
+    public static String getEstimatedExecutionTime(int boardSize) {
+        switch (getComplexityLevel(boardSize)) {
+            case "trivial":
+                return "< 1 segundo";
+            case "normal":
+                return "1-5 segundos";
+            case "complejo":
+                return "5-60 segundos";
+            case "muy_complejo":
+                return "1-10 minutos";
+            case "extremo":
+                return "10+ minutos (puede tardar horas)";
+            default:
+                return "tiempo desconocido";
+        }
+    }
+
+    /**
      * Calcula el timeout recomendado basado en el tamaño del problema
      *
      * @param boardSize Tamaño del tablero
@@ -188,12 +231,20 @@ public final class ApplicationConfig {
     public static long calculateRecommendedTimeout(int boardSize) {
         // Timeout base + factor exponencial para problemas más grandes
         long baseTimeout = DEFAULT_EXECUTION_TIMEOUT_MS;
-        if (boardSize <= 8) {
-            return baseTimeout;
+        
+        if (boardSize <= 4) {
+            return baseTimeout / 2;  // 30 segundos para casos triviales
+        } else if (boardSize <= 8) {
+            return baseTimeout;      // 60 segundos para casos normales
         } else if (boardSize <= 12) {
-            return baseTimeout * 2;
+            return baseTimeout * 3;  // 3 minutos para casos complejos
+        } else if (boardSize <= 16) {
+            return baseTimeout * 10; // 10 minutos para casos muy complejos
+        } else if (boardSize <= 20) {
+            return baseTimeout * 30; // 30 minutos para casos extremos
         } else {
-            return baseTimeout * 4;
+            // Para N > 20, usar timeout máximo
+            return baseTimeout * 60; // 1 hora máximo
         }
     }
 

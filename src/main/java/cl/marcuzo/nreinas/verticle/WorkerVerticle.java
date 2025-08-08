@@ -1,13 +1,10 @@
 package cl.marcuzo.nreinas.verticle;
 
-import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.Timer;
-import io.micrometer.prometheus.PrometheusMeterRegistry;
+import cl.marcuzo.nreinas.metrics.MetricsManager;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.micrometer.backends.BackendRegistries;
 import java.util.*;
 
 /**
@@ -16,12 +13,7 @@ import java.util.*;
  */
 public class WorkerVerticle extends AbstractVerticle {
 
-  private Counter executionCounter;
-  private Counter errorCounter;
-  private Timer executionTimer;
-  private Counter statesProcessedCounter;
-  private Counter solutionsFoundCounter;
-
+  private MetricsManager metricsManager;
   private int workerId;
   private int N;
   private int startRow;
@@ -30,29 +22,8 @@ public class WorkerVerticle extends AbstractVerticle {
 
   @Override
   public void start() {
-    PrometheusMeterRegistry prometheusRegistry =
-        (PrometheusMeterRegistry) BackendRegistries.getDefaultNow();
-
-    // Definir métricas personalizadas
-    executionCounter =
-        Counter.builder("worker.executions").description("Número de ejecuciones del WorkerVerticle")
-            .tag("worker", "nreinas").register(prometheusRegistry);
-
-    errorCounter =
-        Counter.builder("worker.errors").description("Número de errores en el WorkerVerticle")
-            .tag("worker", "nreinas").register(prometheusRegistry);
-
-    executionTimer =
-        Timer.builder("worker.execution.time").description("Tiempo de ejecución del WorkerVerticle")
-            .tag("worker", "nreinas").register(prometheusRegistry);
-
-    statesProcessedCounter =
-        Counter.builder("worker.states.processed").description("Estados procesados por el WorkerVerticle")
-            .tag("worker", "nreinas").register(prometheusRegistry);
-
-    solutionsFoundCounter =
-        Counter.builder("worker.solutions.found").description("Soluciones encontradas por el WorkerVerticle")
-            .tag("worker", "nreinas").register(prometheusRegistry);
+    // Inicializar MetricsManager
+    metricsManager = MetricsManager.getInstance();
 
     // Configuración del worker
     workerId = config().getInteger("workerId", 0);
@@ -75,22 +46,20 @@ public class WorkerVerticle extends AbstractVerticle {
   }
 
   private void startProcessing() {
-    executionTimer.record(() -> {
-      try {
-        // Simplificar: solo el worker 0 procesará todo el tablero
-        if (workerId == 0) {
-          System.out.println("Worker #0 iniciando búsqueda completa de N-Reinas");
-          solveNQueensComplete();
-        } else {
-          System.out.println("Worker #" + workerId + " en espera para trabajo específico");
-          // Otros workers pueden procesar trabajos específicos enviados por el orquestador
-        }
-        executionCounter.increment();
-      } catch (Exception e) {
-        System.out.println("Error en WorkerVerticle #" + workerId + ": " + e.getMessage());
-        errorCounter.increment();
+    try {
+      // Simplificar: solo el worker 0 procesará todo el tablero
+      if (workerId == 0) {
+        System.out.println("Worker #0 iniciando búsqueda completa de N-Reinas");
+        solveNQueensComplete();
+      } else {
+        System.out.println("Worker #" + workerId + " en espera para trabajo específico");
+        // Otros workers pueden procesar trabajos específicos enviados por el orquestador
       }
-    });
+      metricsManager.incrementWorkerExecutions();
+    } catch (Exception e) {
+      System.out.println("Error en WorkerVerticle #" + workerId + ": " + e.getMessage());
+      metricsManager.incrementWorkerErrors();
+    }
   }
 
   /**
@@ -113,7 +82,7 @@ public class WorkerVerticle extends AbstractVerticle {
       solution.forEach(solutionJson::add);
 
       eventBus.send("solution.found", new JsonObject().put("solution", solutionJson));
-      solutionsFoundCounter.increment();
+      metricsManager.recordSolutionsFound(1);
     }
   }
 
@@ -124,7 +93,7 @@ public class WorkerVerticle extends AbstractVerticle {
     if (row == N) {
       // Hemos colocado todas las reinas, esta es una solución válida
       allSolutions.add(new ArrayList<>(currentSolution));
-      statesProcessedCounter.increment();
+      metricsManager.incrementStatesProcessed(1);
       return;
     }
 
@@ -216,7 +185,7 @@ public class WorkerVerticle extends AbstractVerticle {
         solution.forEach(solutionJson::add);
 
         eventBus.send("solution.found", new JsonObject().put("solution", solutionJson));
-        solutionsFoundCounter.increment();
+        metricsManager.recordSolutionsFound(1);
       }
       return;
     }
@@ -232,7 +201,7 @@ public class WorkerVerticle extends AbstractVerticle {
           nextStates.add(newState);
         }
       }
-      statesProcessedCounter.increment();
+      metricsManager.incrementStatesProcessed(1);
     }
 
     System.out.println("Worker #" + workerId + ": Fila " + nextRow + " - " +

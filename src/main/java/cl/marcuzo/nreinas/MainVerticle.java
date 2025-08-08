@@ -92,8 +92,8 @@ public class MainVerticle extends AbstractVerticle {
    * Configura el servidor HTTP con enrutamiento y middleware
    */
   private void setupHttpServer(Promise<Void> startPromise) {
-    Router router = Router.router(vertx);
-
+        Router router = Router.router(vertx);
+        
     // Middleware global para CORS y logging
     setupGlobalMiddleware(router);
 
@@ -148,7 +148,7 @@ public class MainVerticle extends AbstractVerticle {
     router.get(ApplicationConfig.METRICS_PATH).handler(this::handleMetricsRequest);
 
     // Rutas de la aplicación
-    router.get("/solve").handler(this::handleSolveRequest);
+        router.get("/solve").handler(this::handleSolveRequest);
     router.get("/status").handler(this::handleStatusRequest);
     router.get("/").handler(this::handleIndexRequest);
 
@@ -191,8 +191,8 @@ public class MainVerticle extends AbstractVerticle {
           } else {
             System.out.println("❌ Fallo al iniciar HTTP server: " + http.cause().getMessage());
             startPromise.fail(http.cause());
-          }
-        });
+      }
+    });
   }
 
     /**
@@ -218,8 +218,8 @@ public class MainVerticle extends AbstractVerticle {
 
       System.out.println("🏰 === Iniciando resolución N-Reinas ===");
       System.out.println("📊 N = " + params.N + ", Workers = " + params.workers);
-
-      long startTime = System.currentTimeMillis();
+    
+    long startTime = System.currentTimeMillis();
       JsonObject request = new JsonObject()
           .put("N", params.N)
           .put("workers", params.workers)
@@ -232,7 +232,7 @@ public class MainVerticle extends AbstractVerticle {
 
       vertx.eventBus().request(ApplicationConfig.ORCHESTRATOR_ADDRESS, request, options, reply -> {
 
-        long elapsedTime = System.currentTimeMillis() - startTime;
+      long elapsedTime = System.currentTimeMillis() - startTime;
         metricsManager.stopHttpTimer(timerSample);
         metricsManager.stopNQueensTimer(nqueensTimer);
         metricsManager.decrementActiveSessions();
@@ -290,6 +290,21 @@ public class MainVerticle extends AbstractVerticle {
         return null;
       }
 
+      // Advertencia para casos complejos
+      String complexityLevel = ApplicationConfig.getComplexityLevel(N);
+      String estimatedTime = ApplicationConfig.getEstimatedExecutionTime(N);
+      
+      if ("extremo".equals(complexityLevel)) {
+        System.out.println("⚠️  === ADVERTENCIA: PROBLEMA EXTREMADAMENTE COMPLEJO ===");
+        System.out.println("📊 N=" + N + " es un caso extremo");
+        System.out.println("⏱️  Tiempo estimado: " + estimatedTime);
+        System.out.println("💡 Sugerencia: Usar N <= 16 para demostraciones");
+        System.out.println("===============================================");
+      } else if ("muy_complejo".equals(complexityLevel)) {
+        System.out.println("⚠️  Problema muy complejo detectado (N=" + N + ")");
+        System.out.println("⏱️  Tiempo estimado: " + estimatedTime);
+      }
+
       return new RequestParameters(N, workers);
 
     } catch (NumberFormatException e) {
@@ -314,6 +329,17 @@ public class MainVerticle extends AbstractVerticle {
     int solutionsFound = response.getInteger("totalSolutions", 0);
     if (solutionsFound > 0) {
       metricsManager.recordSolutionsFound(solutionsFound);
+    }
+
+    // Registrar métricas de rendimiento con dimensiones N y workers
+    int N = response.getInteger("N", 0);
+    int workers = response.getInteger("workersDeployed", 0);
+    long executionTime = response.getLong("elapsedTimeMs", 0L);
+    
+    if (N > 0 && workers > 0 && executionTime > 0) {
+      metricsManager.recordPerformanceMetrics(N, workers, executionTime, solutionsFound);
+      System.out.println("📊 Métricas de rendimiento registradas: N=" + N + ", Workers=" + workers + 
+                        ", Tiempo=" + executionTime + "ms, Soluciones=" + solutionsFound);
     }
 
     context.response()
