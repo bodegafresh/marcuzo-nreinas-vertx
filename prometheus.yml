@@ -1,0 +1,7 @@
+global:
+  scrape_interval: 5s  # Intervalo de scrapeo
+
+scrape_configs:
+  - job_name: 'nreinas'
+    static_configs:
+      - targets: ['localhost:8080']  # Dirección del endpoint de métricas

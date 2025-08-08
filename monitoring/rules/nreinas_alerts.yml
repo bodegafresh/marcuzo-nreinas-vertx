@@ -1,0 +1,117 @@
+# Reglas de alertas para N-Reinas Distribuido
+groups:
+  - name: nreinas_application
+    rules:
+      # Alerta si la aplicación está caída
+      - alert: NReinasApplicationDown
+        expr: up{job="nreinas-app"} == 0
+        for: 30s
+        labels:
+          severity: critical
+          service: nreinas
+        annotations:
+          summary: "Aplicación N-Reinas está caída"
+          description: "La aplicación N-Reinas no está respondiendo en {{ $labels.instance }}"
+
+      # Alerta por alto uso de memoria JVM
+      - alert: HighJVMMemoryUsage
+        expr: (jvm_memory_used_bytes{area="heap"} / jvm_memory_max_bytes{area="heap"}) * 100 > 80
+        for: 2m
+        labels:
+          severity: warning
+          service: nreinas
+        annotations:
+          summary: "Alto uso de memoria JVM"
+          description: "El uso de memoria heap está en {{ $value }}% en {{ $labels.instance }}"
+
+      # Alerta por errores en workers
+      - alert: HighWorkerErrorRate
+        expr: rate(worker_errors_total[5m]) > 0.1
+        for: 1m
+        labels:
+          severity: warning
+          service: nreinas
+        annotations:
+          summary: "Alta tasa de errores en workers"
+          description: "La tasa de errores en workers es {{ $value }} errores/segundo"
+
+      # Alerta por tiempo de respuesta lento
+      - alert: SlowResponseTime
+        expr: histogram_quantile(0.95, rate(http_server_requests_seconds_bucket[5m])) > 10
+        for: 2m
+        labels:
+          severity: warning
+          service: nreinas
+        annotations:
+          summary: "Tiempo de respuesta lento"
+          description: "El percentil 95 del tiempo de respuesta es {{ $value }} segundos"
+
+      # Alerta por muchas soluciones procesadas (posible carga alta)
+      - alert: HighSolutionProcessingRate
+        expr: rate(worker_solutions_found_total[5m]) > 100
+        for: 2m
+        labels:
+          severity: info
+          service: nreinas
+        annotations:
+          summary: "Alta tasa de procesamiento de soluciones"
+          description: "Se están procesando {{ $value }} soluciones/segundo"
+
+  - name: system_resources
+    rules:
+      # Alerta por alto uso de CPU
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 2m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "Alto uso de CPU"
+          description: "El uso de CPU está en {{ $value }}% en {{ $labels.instance }}"
+
+      # Alerta por alto uso de memoria del sistema
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 2m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "Alto uso de memoria del sistema"
+          description: "El uso de memoria está en {{ $value }}% en {{ $labels.instance }}"
+
+      # Alerta por poco espacio en disco
+      - alert: LowDiskSpace
+        expr: (1 - (node_filesystem_avail_bytes{fstype!="tmpfs"} / node_filesystem_size_bytes{fstype!="tmpfs"})) * 100 > 90
+        for: 5m
+        labels:
+          severity: critical
+          service: system
+        annotations:
+          summary: "Poco espacio en disco"
+          description: "El uso de disco está en {{ $value }}% en {{ $labels.mountpoint }} ({{ $labels.instance }})"
+
+  - name: container_resources
+    rules:
+      # Alerta por alto uso de CPU en contenedores
+      - alert: HighContainerCPU
+        expr: rate(container_cpu_usage_seconds_total{name!=""}[5m]) * 100 > 80
+        for: 2m
+        labels:
+          severity: warning
+          service: container
+        annotations:
+          summary: "Alto uso de CPU en contenedor"
+          description: "El contenedor {{ $labels.name }} está usando {{ $value }}% de CPU"
+
+      # Alerta por alto uso de memoria en contenedores
+      - alert: HighContainerMemory
+        expr: (container_memory_usage_bytes{name!=""} / container_spec_memory_limit_bytes{name!=""}) * 100 > 80
+        for: 2m
+        labels:
+          severity: warning
+          service: container
+        annotations:
+          summary: "Alto uso de memoria en contenedor"
+          description: "El contenedor {{ $labels.name }} está usando {{ $value }}% de memoria"

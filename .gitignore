@@ -191,3 +191,4 @@ nbdist/
 .settings/
 .editorconfig
 .idea/
+data/

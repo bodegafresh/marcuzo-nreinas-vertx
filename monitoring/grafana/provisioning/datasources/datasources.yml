@@ -1,0 +1,39 @@
+# Configuración automática de datasources para Grafana
+apiVersion: 1
+
+# Lista de datasources a configurar
+datasources:
+  # Prometheus como fuente principal de métricas
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: true
+    basicAuth: false
+    jsonData:
+      httpMethod: POST
+      queryTimeout: 60s
+      timeInterval: 5s
+      manageAlerts: true
+      alertmanagerUid: alertmanager
+    version: 1
+
+  # AlertManager para gestión de alertas
+  - name: AlertManager
+    type: alertmanager
+    access: proxy
+    url: http://alertmanager:9093
+    isDefault: false
+    editable: true
+    jsonData:
+      implementation: prometheus
+    version: 1
+
+  # TestData para pruebas (opcional)
+  - name: TestData
+    type: testdata
+    access: proxy
+    isDefault: false
+    editable: true
+    version: 1

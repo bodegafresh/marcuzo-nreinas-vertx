@@ -14,7 +14,7 @@ repositories {
   mavenCentral()
 }
 
-val vertxVersion = "4.5.3"
+val vertxVersion = "4.5.13"
 val junitJupiterVersion = "5.9.1"
 
 val mainVerticleName = "cl.marcuzo.nreinas.MainVerticle"
@@ -30,8 +30,14 @@ application {
 dependencies {
   implementation(platform("io.vertx:vertx-stack-depchain:$vertxVersion"))
   implementation("io.vertx:vertx-core")
+  implementation("io.vertx:vertx-web")
+  implementation("io.vertx:vertx-micrometer-metrics")
+  implementation("io.micrometer:micrometer-registry-prometheus:1.11.3")
+  
+  
   testImplementation("io.vertx:vertx-junit5")
   testImplementation("org.junit.jupiter:junit-jupiter:$junitJupiterVersion")
+  
 }
 
 java {

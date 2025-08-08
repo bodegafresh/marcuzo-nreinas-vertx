@@ -1,0 +1,57 @@
+version: "3.8"
+
+# Versión simplificada para desarrollo local sin Docker daemon
+# Este archivo sirve como documentación de la arquitectura completa
+
+services:
+  # Aplicación N-Reinas Distribuido
+  nreinas-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nreinas-app
+    ports:
+      - "8080:8080"
+    environment:
+      - JAVA_OPTS=-Xmx1g -Xms512m
+      - VERTX_OPTS=-Dvertx.metrics.options.enabled=true
+    networks:
+      - monitoring
+    restart: unless-stopped
+
+  # Solo Prometheus para métricas básicas
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.enable-lifecycle"
+    networks:
+      - monitoring
+    restart: unless-stopped
+
+  # Solo Grafana para visualización
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+    networks:
+      - monitoring
+    restart: unless-stopped
+
+networks:
+  monitoring:
+    driver: bridge
+    name: nreinas-monitoring-local
